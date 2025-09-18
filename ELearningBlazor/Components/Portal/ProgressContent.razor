@@ -1,0 +1,273 @@
+@using ELearningBlazor.Services
+@using ELearningBlazor.Models
+@using ELearningBlazor.Utils
+@inject IAuthService AuthService
+@inject IEnrollmentService EnrollmentService
+
+<div class="space-y-8">
+    <!-- Progress Overview Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Overall Progress -->
+        <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-bold text-midnight_text">Overall Progress</h3>
+                <span class="text-2xl">📊</span>
+            </div>
+            <div class="space-y-3">
+                <div class="text-3xl font-bold text-midnight_text">@($"{overallProgress:F0}")%</div>
+                <div class="w-full bg-gray-200 rounded-full h-3">
+                    <div class="bg-gradient-to-r from-primary to-secondary h-3 rounded-full transition-all duration-500"
+                         style="width: @(overallProgress)%"></div>
+                </div>
+                <p class="text-sm text-gray-600">Across @totalCourses course@(totalCourses == 1 ? "" : "s")</p>
+            </div>
+        </div>
+
+        <!-- Learning Streak -->
+        <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-bold text-midnight_text">Learning Streak</h3>
+                <span class="text-2xl">🔥</span>
+            </div>
+            <div class="space-y-3">
+                <div class="text-3xl font-bold text-midnight_text">@studyStreak</div>
+                <div class="text-sm font-medium text-success">+2 from last week</div>
+                <p class="text-sm text-gray-600">Consecutive days</p>
+            </div>
+        </div>
+
+        <!-- Time Invested -->
+        <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-bold text-midnight_text">Time Invested</h3>
+                <span class="text-2xl">⏰</span>
+            </div>
+            <div class="space-y-3">
+                <div class="text-3xl font-bold text-midnight_text">@totalHours</div>
+                <div class="text-sm font-medium text-primary">This month</div>
+                <p class="text-sm text-gray-600">Hours of learning</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Course Progress Details -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-bold text-midnight_text">Course Progress Breakdown</h3>
+            <select class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                <option>All Courses</option>
+                <option>In Progress</option>
+                <option>Completed</option>
+            </select>
+        </div>
+
+        <div class="space-y-6">
+            @if (enrolledCourses.Any())
+            {
+                @foreach (var courseInfo in enrolledCourses)
+                {
+                    var course = DataService.GetCourseById(courseInfo.CourseId);
+                    var enrollment = EnrollmentService.GetEnrollmentInfo(courseInfo.CourseId);
+
+                    @if (course != null && enrollment != null)
+                    {
+                        <div class="border border-gray-200 rounded-lg p-6">
+                            <div class="flex items-start gap-4 mb-4">
+                                <img src="@ImageHelper.GetImagePath(course.ImgSrc)"
+                                     alt="@course.Heading"
+                                     class="w-16 h-16 rounded-lg object-cover border-2 border-gray-200" />
+
+                                <div class="flex-grow">
+                                    <h4 class="font-bold text-midnight_text mb-1">@course.Heading</h4>
+                                    <p class="text-sm text-gray-600 mb-2">By @course.Name</p>
+
+                                    <div class="flex items-center gap-4 text-xs text-gray-500">
+                                        <span>📚 @course.Classes lessons</span>
+                                        <span>⏰ @course.Duration</span>
+                                        <span>📊 @course.Level</span>
+                                    </div>
+                                </div>
+
+                                <div class="text-right">
+                                    <div class="text-2xl font-bold text-midnight_text mb-1">@($"{enrollment.Progress:F0}")%</div>
+                                    @if (enrollment.Progress >= 100)
+                                    {
+                                        <span class="text-xs text-success font-medium">Completed</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-xs text-gray-500">In Progress</span>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Progress Bar -->
+                            <div class="space-y-2">
+                                <div class="w-full bg-gray-200 rounded-full h-3">
+                                    <div class="@GetProgressBarClass(enrollment.Progress) h-3 rounded-full transition-all duration-300"
+                                         style="width: @(enrollment.Progress)%"></div>
+                                </div>
+                                <div class="flex justify-between text-xs text-gray-500">
+                                    <span>@enrollment.CompletedModules.Count of @course.Modules.Count modules completed</span>
+                                    <span>Started @enrollment.EnrollmentDate.ToString("MMM dd, yyyy")</span>
+                                </div>
+                            </div>
+
+                            <!-- Module Progress -->
+                            @if (course.Modules.Any())
+                            {
+                                <div class="mt-6">
+                                    <h5 class="font-semibold text-midnight_text mb-3">Module Progress</h5>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                        @for (int i = 0; i < course.Modules.Count; i++)
+                                        {
+                                            var module = course.Modules[i];
+                                            var isCompleted = enrollment.CompletedModules.Contains(i);
+
+                                            <div class="@(isCompleted ? "bg-success/10 border-success" : "bg-gray-50 border-gray-200") border rounded-lg p-3">
+                                                <div class="flex items-center gap-2">
+                                                    @if (isCompleted)
+                                                    {
+                                                        <span class="text-success text-lg">✓</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-gray-400 text-lg">○</span>
+                                                    }
+                                                    <div>
+                                                        <p class="text-sm font-medium text-midnight_text">@module.Title</p>
+                                                        <p class="text-xs text-gray-500">@module.Lessons.Count lessons • @module.Duration</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                }
+            }
+            else
+            {
+                <div class="text-center py-12">
+                    <span class="text-6xl mb-4 block">📈</span>
+                    <h4 class="text-lg font-semibold text-midnight_text mb-2">No progress to show</h4>
+                    <p class="text-gray-600 mb-4">Start learning to see your progress here!</p>
+                    <a href="/" class="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors">
+                        Browse Courses →
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Learning Analytics -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Weekly Activity -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-xl font-bold text-midnight_text mb-6">Weekly Activity</h3>
+
+            <div class="space-y-4">
+                @foreach (var day in weeklyActivity)
+                {
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-medium text-gray-600 w-12">@day.Day</span>
+                        <div class="flex-1 bg-gray-200 rounded-full h-2">
+                            <div class="bg-primary h-2 rounded-full transition-all duration-300"
+                                 style="width: @(day.Progress)%"></div>
+                        </div>
+                        <span class="text-sm text-gray-500">@day.Hours h</span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Achievements -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-xl font-bold text-midnight_text mb-6">Recent Achievements</h3>
+
+            <div class="space-y-4">
+                <div class="flex items-center gap-3 p-3 bg-yellow-50 rounded-lg">
+                    <span class="text-2xl">🏆</span>
+                    <div>
+                        <p class="font-medium text-midnight_text">Course Completed</p>
+                        <p class="text-sm text-gray-600">Finished "Design banner with Figma"</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 p-3 bg-orange-50 rounded-lg">
+                    <span class="text-2xl">🔥</span>
+                    <div>
+                        <p class="font-medium text-midnight_text">7-Day Streak</p>
+                        <p class="text-sm text-gray-600">Studied for 7 consecutive days</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
+                    <span class="text-2xl">⭐</span>
+                    <div>
+                        <p class="font-medium text-midnight_text">Fast Learner</p>
+                        <p class="text-sm text-gray-600">Completed 5 modules this week</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<EnrolledCourse> enrolledCourses = new();
+    private double overallProgress = 0;
+    private int totalCourses = 0;
+    private int studyStreak = 7;
+    private int totalHours = 24;
+
+    private List<WeeklyActivity> weeklyActivity = new()
+    {
+        new() { Day = "Mon", Hours = 2, Progress = 80 },
+        new() { Day = "Tue", Hours = 3, Progress = 100 },
+        new() { Day = "Wed", Hours = 1, Progress = 40 },
+        new() { Day = "Thu", Hours = 4, Progress = 100 },
+        new() { Day = "Fri", Hours = 2, Progress = 80 },
+        new() { Day = "Sat", Hours = 3, Progress = 100 },
+        new() { Day = "Sun", Hours = 1, Progress = 40 }
+    };
+
+    protected override void OnInitialized()
+    {
+        LoadProgressData();
+    }
+
+    private void LoadProgressData()
+    {
+        if (AuthService.CurrentUser == null) return;
+
+        enrolledCourses = AuthService.CurrentUser.EnrolledCourses
+            .Where(ec => ec.IsActive)
+            .OrderByDescending(ec => ec.LastAccessed ?? ec.EnrollmentDate)
+            .ToList();
+
+        totalCourses = enrolledCourses.Count;
+        overallProgress = enrolledCourses.Any() ? enrolledCourses.Average(ec => ec.Progress) : 0;
+    }
+
+    private string GetProgressBarClass(double progress)
+    {
+        return progress switch
+        {
+            >= 100 => "bg-success",
+            >= 75 => "bg-primary",
+            >= 50 => "bg-yellow-500",
+            >= 25 => "bg-orange-500",
+            _ => "bg-red-500"
+        };
+    }
+
+    private class WeeklyActivity
+    {
+        public string Day { get; set; } = "";
+        public int Hours { get; set; }
+        public double Progress { get; set; }
+    }
+}

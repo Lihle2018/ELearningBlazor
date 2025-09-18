@@ -1,0 +1,89 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    font-family: 'Poppins', sans-serif;
+  }
+
+  body {
+    font-family: 'Poppins', sans-serif;
+  }
+}
+
+@layer components {
+  section {
+    @apply py-20;
+  }
+
+  .slick-dots {
+    color: #1A21BC;
+  }
+
+  .slick-dots li.slick-active button:before {
+    opacity: 1;
+    color: #1A21BC !important;
+  }
+
+  .slick-dots li button:before {
+    font-size: 11px !important;
+  }
+
+  /* Custom component classes */
+  .smallImage {
+    width: 30px;
+    height: 30px;
+  }
+
+  .clipPath {
+    border-radius: 1.5rem;
+  }
+
+  /* Modern glass morphism effects */
+  .glass-effect {
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+  }
+
+  .glass-dark {
+    background: rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  /* Enhanced hover animations */
+  .hover-lift {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  }
+
+  /* Smooth gradient animations */
+  .gradient-animate {
+    background-size: 200% 200%;
+    animation: gradientShift 6s ease infinite;
+  }
+
+  @keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* Ensure all primary colors and custom colors are available */
+  .text-primary { color: #6556ff; }
+  .text-secondary { color: #1a21bc; }
+  .text-success { color: #43c639; }
+  .text-midnight_text { color: #222c44; }
+  .bg-primary { background-color: #6556ff; }
+  .bg-secondary { background-color: #1a21bc; }
+  .bg-slateGray { background-color: #f6faff; }
+  .bg-deepSlate { background-color: #d5effa; }
+  .bg-success { background-color: #43c639; }
+}

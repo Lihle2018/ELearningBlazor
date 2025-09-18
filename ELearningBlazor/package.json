@@ -1,0 +1,12 @@
+{
+  "name": "elearning-blazor",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "css:build": "tailwindcss -i ./Styles/input.css -o ./wwwroot/css/app.css --watch",
+    "css:build-prod": "tailwindcss -i ./Styles/input.css -o ./wwwroot/css/app.css --minify"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.1"
+  }
+}

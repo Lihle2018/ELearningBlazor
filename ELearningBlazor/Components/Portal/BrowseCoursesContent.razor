@@ -1,0 +1,453 @@
+@using ELearningBlazor.Services
+@using ELearningBlazor.Models
+@using ELearningBlazor.Utils
+@using ELearningBlazor.Components.Shared
+@inject IAuthService AuthService
+@inject ICourseService CourseService
+@inject IEnrollmentService EnrollmentService
+@inject NavigationManager Navigation
+
+
+<!-- Search and Filters -->
+<div class="mb-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center">
+        <!-- Search -->
+        <div class="flex-1">
+            <div class="relative">
+                <input type="text" @bind="searchQuery" @oninput="HandleSearch"
+                       placeholder="Search courses, instructors, or topics..."
+                       class="w-full rounded-lg border border-gray-200 bg-white py-3 pl-10 pr-4 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-blue-400" />
+                <svg class="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="flex gap-3">
+            <div class="relative">
+                <select @bind="selectedLevel" @bind:after="ApplyFilters"
+                        class="appearance-none rounded-lg border border-gray-200 bg-white px-4 py-3 pr-8 text-sm font-medium text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                    <option value="">All Levels</option>
+                    <option value="Beginner">Beginner</option>
+                    <option value="Intermediate">Intermediate</option>
+                    <option value="Advanced">Advanced</option>
+                </select>
+                <svg class="absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+            </div>
+
+            <div class="relative">
+                <select @bind="sortBy" @bind:after="ApplyFilters"
+                        class="appearance-none rounded-lg border border-gray-200 bg-white px-4 py-3 pr-8 text-sm font-medium text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                    <option value="rating">Highest Rated</option>
+                    <option value="students">Most Popular</option>
+                    <option value="price">Price: Low to High</option>
+                    <option value="newest">Newest</option>
+                </select>
+                <svg class="absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(searchQuery) || !string.IsNullOrEmpty(selectedLevel))
+    {
+        <div class="mt-4 flex items-center justify-between border-t border-gray-200 pt-4 dark:border-gray-700">
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+                Showing @filteredCourses.Count result@(filteredCourses.Count == 1 ? "" : "s")
+                @if (!string.IsNullOrEmpty(searchQuery))
+                {
+                    <span> for "@searchQuery"</span>
+                }
+            </p>
+            <button @onclick="ClearFilters" class="text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
+                Clear filters
+            </button>
+        </div>
+    }
+</div>
+
+<!-- Courses Grid -->
+@if (filteredCourses.Any())
+{
+    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        @foreach (var course in filteredCourses)
+        {
+            var isEnrolled = enrollments.Any(e => e.CourseId == course.Id && e.IsActive);
+
+            <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-shadow duration-200 hover:shadow-lg dark:border-gray-800 dark:bg-gray-900">
+                <!-- Course Image -->
+                <div class="relative">
+                    <img src="@ImageHelper.GetImagePath(course.ImgSrc)"
+                         alt="@course.Heading"
+                         class="h-48 w-full object-cover" />
+
+                    <!-- Level Badge -->
+                    <div class="absolute left-3 top-3">
+                        <span class="@GetLevelBadgeClass(course.Level) inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium">
+                            @course.Level
+                        </span>
+                    </div>
+
+                    <!-- Enrollment Status -->
+                    @if (isEnrolled)
+                    {
+                        <div class="absolute right-3 top-3">
+                            <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/20 dark:text-green-300">
+                                <svg class="mr-1 h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                </svg>
+                                Enrolled
+                            </span>
+                        </div>
+                    }
+                </div>
+
+                <!-- Course Content -->
+                <div class="p-6">
+                    <div class="mb-4">
+                        <h3 class="mb-2 text-lg font-semibold text-gray-900 hover:text-blue-600 cursor-pointer transition-colors dark:text-white dark:hover:text-blue-400"
+                            @onclick="@(() => ViewCourse(course.Id))">
+                            @course.Heading
+                        </h3>
+                        <p class="mb-3 text-sm text-gray-600 dark:text-gray-400">By @course.Name</p>
+
+                        <!-- Rating -->
+                        <div class="mb-3 flex items-center space-x-2">
+                            <div class="flex items-center">
+                                @for (int i = 0; i < 5; i++)
+                                {
+                                    <svg class="h-4 w-4 @(i < (int)Math.Floor(course.Rating) ? "text-yellow-400" : "text-gray-300")" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                    </svg>
+                                }
+                            </div>
+                            <span class="text-sm font-medium text-gray-900 dark:text-white">@course.Rating</span>
+                            <span class="text-sm text-gray-500 dark:text-gray-400">(@course.Students students)</span>
+                        </div>
+
+                        <!-- Description -->
+                        <p class="mb-4 line-clamp-2 text-sm text-gray-600 dark:text-gray-400">@course.Description</p>
+                    </div>
+
+                    <!-- Course Stats -->
+                    <div class="mb-4 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                        <div class="flex items-center space-x-1">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                            </svg>
+                            <span>@course.Classes lessons</span>
+                        </div>
+                        <div class="flex items-center space-x-1">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span>@course.Duration</span>
+                        </div>
+                    </div>
+
+                    <!-- Price and Action -->
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="text-2xl font-bold text-gray-900 dark:text-white">@(course.Price == 0 ? "Free" : $"${course.Price}")</span>
+                        </div>
+
+                        @if (isEnrolled)
+                        {
+                            <div class="flex gap-2">
+                                <button @onclick="@(() => ContinueLearning(course.Id))"
+                                        class="rounded-lg bg-green-600 px-3 py-1 text-sm font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:bg-green-500 dark:hover:bg-green-600">
+                                    Continue Learning
+                                </button>
+                                <button @onclick="@(() => ShowUnenrollModal(course.Id))"
+                                        class="rounded-lg bg-red-600 px-3 py-1 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:bg-red-500 dark:hover:bg-red-600">
+                                    Remove
+                                </button>
+                            </div>
+                        }
+                        else
+                        {
+                            <button @onclick="@(() => EnrollInCourse(course.Id))"
+                                    class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:bg-blue-500 dark:hover:bg-blue-600"
+                                    disabled="@(isEnrolling && enrollingCourseId == course.Id)">
+                                @if (isEnrolling && enrollingCourseId == course.Id)
+                                {
+                                    <div class="flex items-center gap-2">
+                                        <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        <span>Enrolling...</span>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span>Enroll Now</span>
+                                }
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="rounded-2xl border border-gray-200 bg-white p-16 text-center shadow-sm dark:border-gray-800 dark:bg-gray-900">
+        <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800">
+            <svg class="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+        </div>
+        <h3 class="mt-4 text-lg font-semibold text-gray-900 dark:text-white">No courses found</h3>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            @if (!string.IsNullOrEmpty(searchQuery))
+            {
+                <span>No courses match your search for "@searchQuery".</span>
+            }
+            else
+            {
+                <span>Try adjusting your filters to see more courses.</span>
+            }
+        </p>
+        <div class="mt-6">
+            <button @onclick="ClearFilters" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                Clear Filters
+            </button>
+        </div>
+    </div>
+}
+
+<!-- Recommended Section (when not filtering) -->
+@if (string.IsNullOrEmpty(searchQuery) && string.IsNullOrEmpty(selectedLevel) && recommendedCourses.Any())
+{
+    <div class="mt-10 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+        <div class="mb-6 flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Recommended for You</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Based on popular courses</p>
+            </div>
+            <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
+                Trending
+            </span>
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+            @foreach (var course in recommendedCourses.Take(3))
+            {
+                var isEnrolled = enrollments.Any(e => e.CourseId == course.Id && e.IsActive);
+
+                <div class="flex items-center space-x-4 rounded-xl border border-gray-100 p-4 hover:bg-gray-50 cursor-pointer transition-colors dark:border-gray-700 dark:hover:bg-gray-800/50"
+                     @onclick="@(() => ViewCourse(course.Id))">
+                    <img src="@ImageHelper.GetImagePath(course.ImgSrc)"
+                         alt="@course.Heading"
+                         class="h-16 w-16 flex-shrink-0 rounded-lg object-cover" />
+
+                    <div class="flex-1 min-w-0">
+                        <h4 class="truncate font-medium text-gray-900 dark:text-white">@course.Heading</h4>
+                        <p class="truncate text-sm text-gray-600 dark:text-gray-400">@course.Name</p>
+                        <div class="mt-1 flex items-center space-x-2">
+                            <div class="flex items-center">
+                                <svg class="h-3 w-3 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                </svg>
+                                <span class="ml-1 text-xs text-gray-600 dark:text-gray-400">@course.Rating</span>
+                            </div>
+                            <span class="text-sm font-semibold text-gray-900 dark:text-white">@(course.Price == 0 ? "Free" : $"${course.Price}")</span>
+                            @if (isEnrolled)
+                            {
+                                <span class="text-xs font-medium text-green-600 dark:text-green-400">Enrolled</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private List<Course> allCourses = new();
+    private List<Course> filteredCourses = new();
+    private List<Course> recommendedCourses = new();
+    private List<EnrolledCourse> enrollments = new();
+
+    private string searchQuery = "";
+    private string selectedLevel = "";
+    private string sortBy = "rating";
+
+    private bool isEnrolling = false;
+    private int enrollingCourseId = 0;
+
+    // Modal state
+    private bool showUnenrollModal = false;
+    private int courseToUnenroll = 0;
+    private bool isUnenrolling = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCourses();
+    }
+
+    private async Task LoadCourses()
+    {
+        // Load all courses from API
+        allCourses = await CourseService.GetCoursesAsync();
+
+        // Load user enrollments
+        if (AuthService.IsAuthenticated)
+        {
+            enrollments = await EnrollmentService.GetMyEnrollmentsAsync();
+        }
+
+        // Get courses not enrolled in for recommendations
+        var enrolledCourseIds = enrollments
+            .Where(ec => ec.IsActive)
+            .Select(ec => ec.CourseId)
+            .ToHashSet();
+
+        recommendedCourses = allCourses
+            .Where(c => !enrolledCourseIds.Contains(c.Id))
+            .OrderByDescending(c => c.Rating)
+            .Take(6)
+            .ToList();
+
+        ApplyFilters();
+    }
+
+    private void HandleSearch(ChangeEventArgs e)
+    {
+        searchQuery = e.Value?.ToString() ?? "";
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        filteredCourses = allCourses.ToList();
+
+        // Apply search filter
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            filteredCourses = filteredCourses.Where(c =>
+                c.Heading.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) ||
+                c.Description.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) ||
+                c.Name.Contains(searchQuery, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+
+        // Apply level filter
+        if (!string.IsNullOrWhiteSpace(selectedLevel))
+        {
+            filteredCourses = filteredCourses.Where(c => c.Level == selectedLevel).ToList();
+        }
+
+        // Apply sorting
+        filteredCourses = sortBy switch
+        {
+            "rating" => filteredCourses.OrderByDescending(c => c.Rating).ToList(),
+            "students" => filteredCourses.OrderByDescending(c => c.Students).ToList(),
+            "price" => filteredCourses.OrderBy(c => c.Price).ToList(),
+            "newest" => filteredCourses.OrderByDescending(c => c.Id).ToList(),
+            _ => filteredCourses.OrderByDescending(c => c.Rating).ToList()
+        };
+        StateHasChanged();
+    }
+
+    private void ClearFilters()
+    {
+        searchQuery = "";
+        selectedLevel = "";
+        sortBy = "rating";
+        ApplyFilters();
+    }
+
+    private string GetLevelBadgeClass(string level)
+    {
+        return level switch
+        {
+            "Beginner" => "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300",
+            "Intermediate" => "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300",
+            "Advanced" => "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300",
+            _ => "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300"
+        };
+    }
+
+    private void ViewCourse(int courseId)
+    {
+        Navigation.NavigateTo($"/portal/course/{courseId}");
+    }
+
+    private void ContinueLearning(int courseId)
+    {
+        Navigation.NavigateTo($"/portal/course/{courseId}");
+    }
+
+    private async Task EnrollInCourse(int courseId)
+    {
+        isEnrolling = true;
+        enrollingCourseId = courseId;
+        StateHasChanged();
+
+        try
+        {
+            var success = await EnrollmentService.EnrollInCourseAsync(courseId);
+            if (success)
+            {
+                await LoadCourses(); // Refresh to update enrollment status
+            }
+        }
+        finally
+        {
+            isEnrolling = false;
+            enrollingCourseId = 0;
+            StateHasChanged();
+        }
+    }
+
+    private void ShowUnenrollModal(int courseId)
+    {
+        courseToUnenroll = courseId;
+        showUnenrollModal = true;
+    }
+
+    private async Task ConfirmUnenroll()
+    {
+        isUnenrolling = true;
+        StateHasChanged();
+
+        try
+        {
+            var success = await EnrollmentService.UnenrollFromCourseAsync(courseToUnenroll);
+            if (success)
+            {
+                await LoadCourses(); // Refresh to update enrollment status
+            }
+        }
+        finally
+        {
+            isUnenrolling = false;
+            showUnenrollModal = false;
+            courseToUnenroll = 0;
+            StateHasChanged();
+        }
+    }
+
+    private void CancelUnenroll()
+    {
+        showUnenrollModal = false;
+        courseToUnenroll = 0;
+    }
+}
+
+<!-- Unenroll Confirmation Modal -->
+<ConfirmationModal IsVisible="showUnenrollModal"
+                   Title="Remove Course"
+                   Message="Are you sure you want to remove this course from your enrolled courses? You will lose all progress."
+                   ConfirmText="Remove Course"
+                   ProcessingText="Removing..."
+                   IsProcessing="isUnenrolling"
+                   OnConfirm="ConfirmUnenroll"
+                   OnCancel="CancelUnenroll" />

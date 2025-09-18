@@ -1,0 +1,28 @@
+@inject IJSRuntime JSRuntime
+
+<!-- Always show scroll to top button for now to avoid JavaScript issues -->
+<button @onclick="ScrollToTopAsync" class="fixed bottom-4 right-4 bg-primary text-white p-3 rounded-full shadow-lg hover:bg-primary/80 transition-all duration-300 z-50">
+    <span class="text-xl">↑</span>
+</button>
+
+@code {
+    private async Task ScrollToTopAsync()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("eval", "window.scrollTo({ top: 0, behavior: 'smooth' });");
+        }
+        catch (Exception)
+        {
+            // If JavaScript fails, try alternative method
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("window.scrollTo", 0, 0);
+            }
+            catch (Exception)
+            {
+                // Ignore errors - scroll to top is not critical functionality
+            }
+        }
+    }
+}

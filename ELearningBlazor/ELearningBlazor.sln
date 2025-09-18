@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36310.24
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ELearningBlazor", "ELearningBlazor.csproj", "{0674635C-EB82-E637-EFB8-6F98EF9395C6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ELearningApi", "..\ELearningApi\ELearningApi.csproj", "{8335F90D-0807-E6DF-BDCD-28DDE62DD828}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0674635C-EB82-E637-EFB8-6F98EF9395C6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0674635C-EB82-E637-EFB8-6F98EF9395C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0674635C-EB82-E637-EFB8-6F98EF9395C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0674635C-EB82-E637-EFB8-6F98EF9395C6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8335F90D-0807-E6DF-BDCD-28DDE62DD828}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8335F90D-0807-E6DF-BDCD-28DDE62DD828}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8335F90D-0807-E6DF-BDCD-28DDE62DD828}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8335F90D-0807-E6DF-BDCD-28DDE62DD828}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {838925F2-7583-45E4-9605-F4B0CE9F3171}
+	EndGlobalSection
+EndGlobal

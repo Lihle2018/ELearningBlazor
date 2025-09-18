@@ -1,0 +1,527 @@
+@page "/course/{CourseId:int}"
+@using ELearningBlazor.Services
+@using ELearningBlazor.Models
+@using ELearningBlazor.Utils
+@using ELearningBlazor.Components.Auth
+@inject IJSRuntime JSRuntime
+@inject IAuthService AuthService
+@inject IEnrollmentService EnrollmentService
+@inject NavigationManager Navigation
+@implements IDisposable
+
+<PageTitle>@(course?.Heading ?? "Course Details") - eLearning</PageTitle>
+
+@if (course == null)
+{
+    <div class="min-h-screen flex items-center justify-center">
+        <div class="text-center">
+            <h2 class="text-2xl text-gray-600 mb-4">Course not found</h2>
+            <a href="/" class="text-primary hover:underline">← Back to Home</a>
+        </div>
+    </div>
+}
+else
+{
+    <!-- Hero Section -->
+    <section class="bg-slateGray pt-32 pb-16">
+        <div class="container mx-auto lg:max-w-screen-xl md:max-w-screen-md px-4">
+            <!-- Back to Courses Link -->
+            <div class="mb-8">
+                <a href="/" class="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors">
+                    <span class="text-xl">←</span>
+                    <span class="font-medium">Back to Courses</span>
+                </a>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                <!-- Course Info -->
+                <div class="lg:col-span-2">
+                    <!-- Course Tags & Meta Info -->
+                    <div class="flex flex-wrap items-center gap-3 mb-6">
+                        <span class="bg-success text-white text-sm px-4 py-2 rounded-full font-medium">@course.Level</span>
+                        <span class="bg-gray-100 text-gray-700 text-sm px-4 py-2 rounded-full font-medium">@course.Duration</span>
+                        <span class="bg-gray-100 text-gray-700 text-sm px-4 py-2 rounded-full font-medium">@course.Language</span>
+                    </div>
+
+                    <!-- Course Title & Description -->
+                    <div class="mb-8">
+                        <h1 class="text-4xl lg:text-5xl font-bold text-midnight_text mb-6 leading-tight">@course.Heading</h1>
+                        <p class="text-xl text-gray-700 leading-relaxed">@course.Description</p>
+                    </div>
+
+                    <!-- Rating & Stats -->
+                    <div class="flex flex-wrap items-center gap-8 mb-12 pb-8 border-b border-gray-200">
+                        <div class="flex items-center gap-3">
+                            <div class="flex">
+                                @for (int i = 0; i < (int)Math.Floor(course.Rating); i++)
+                                {
+                                    <span class="text-yellow-500 text-2xl">★</span>
+                                }
+                                @if (course.Rating % 1 >= 0.5)
+                                {
+                                    <span class="text-yellow-500 text-2xl">☆</span>
+                                }
+                                @for (int i = 0; i < 5 - (int)Math.Ceiling(course.Rating); i++)
+                                {
+                                    <span class="text-gray-300 text-2xl">☆</span>
+                                }
+                            </div>
+                            <span class="text-xl font-semibold text-midnight_text">@course.Rating</span>
+                            <span class="text-gray-500">(@course.Students reviews)</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-primary text-2xl">👥</span>
+                            <span class="text-gray-700 font-medium">@course.Students students enrolled</span>
+                        </div>
+                    </div>
+
+                    <!-- Instructor Card -->
+                    <div class="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm hover:shadow-md transition-shadow">
+                        <h3 class="text-2xl font-bold text-midnight_text mb-6">Meet Your Instructor</h3>
+                        <div class="flex items-start gap-6">
+                            <div class="flex-shrink-0">
+                                <img src="@ImageHelper.GetImagePath(course.InstructorImage)" alt="@course.Name" class="w-24 h-24 rounded-full object-cover border-4 border-primary/20" />
+                            </div>
+                            <div class="flex-grow">
+                                <h4 class="text-2xl font-semibold text-midnight_text mb-2">@course.Name</h4>
+                                <p class="text-primary font-medium mb-3">Course Instructor</p>
+                                <p class="text-gray-600 leading-relaxed">@course.InstructorBio</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Course Enrollment Card -->
+                <div class="lg:col-span-1">
+                    <div class="lg:sticky lg:top-32">
+                        <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                            <!-- Course Image -->
+                            <div class="relative">
+                                <img src="@ImageHelper.GetImagePath(course.ImgSrc)" alt="@course.Heading" class="w-full h-56 object-cover" />
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                            </div>
+
+                            <!-- Card Content -->
+                            <div class="p-8">
+                                <!-- Price -->
+                                <div class="text-center mb-8 pb-6 border-b border-gray-100">
+                                    <div class="text-5xl font-bold text-midnight_text mb-2">@(course.Price == 0 ? "Free" : $"${course.Price}")</div>
+                                    <p class="text-gray-600 text-lg">One-time payment</p>
+                                </div>
+
+                                <!-- Enroll Button -->
+                                @{
+                                    var isEnrolled = AuthService.IsAuthenticated && EnrollmentService.GetEnrollmentInfo(course.Id) != null;
+                                }
+
+                                @if (isEnrolled)
+                                {
+                                    <div class="space-y-3 mb-4">
+                                        <div class="w-full bg-success text-white py-4 px-6 rounded-full text-lg font-semibold text-center">
+                                            ✓ Enrolled
+                                        </div>
+                                        <div class="flex gap-3">
+                                            <button @onclick="GoToStudentPortal" class="flex-1 bg-primary text-white py-3 px-4 rounded-lg font-semibold hover:bg-primary/90 transition-colors">
+                                                Continue Learning
+                                            </button>
+                                            <button @onclick="HandleUnenroll" class="flex-1 bg-red-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-red-700 transition-colors" disabled="@isUnenrolling">
+                                                @if (isUnenrolling)
+                                                {
+                                                    <span>Removing...</span>
+                                                }
+                                                else
+                                                {
+                                                    <span>Remove Course</span>
+                                                }
+                                            </button>
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <button @onclick="HandleEnrollClick" class="w-full bg-primary text-white py-4 px-6 rounded-full text-lg font-semibold hover:bg-primary/90 hover:shadow-lg transition-all duration-300 mb-4" disabled="@isEnrolling">
+                                        @if (isEnrolling)
+                                        {
+                                            <span class="flex items-center justify-center gap-2">
+                                                <span class="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span>
+                                                Enrolling...
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span>Enroll Now</span>
+                                        }
+                                    </button>
+                                }
+
+                                <!-- Guarantee -->
+                                <div class="text-center text-sm text-gray-500 mb-8">
+                                    <span class="inline-flex items-center gap-2">
+                                        <span>🛡️</span>
+                                        30-day money-back guarantee
+                                    </span>
+                                </div>
+
+                                <!-- Course Includes -->
+                                <div class="space-y-4">
+                                    <h4 class="font-bold text-midnight_text text-lg border-b border-gray-100 pb-3 mb-4">This course includes:</h4>
+                                    <div class="space-y-4">
+                                        <div class="flex items-center gap-4">
+                                            <span class="text-primary text-xl flex-shrink-0">🎥</span>
+                                            <span class="text-gray-700">@course.Classes video lessons</span>
+                                        </div>
+                                        <div class="flex items-center gap-4">
+                                            <span class="text-primary text-xl flex-shrink-0">📱</span>
+                                            <span class="text-gray-700">Access on mobile and desktop</span>
+                                        </div>
+                                        @if (course.HasCertificate)
+                                        {
+                                            <div class="flex items-center gap-4">
+                                                <span class="text-primary text-xl flex-shrink-0">🏆</span>
+                                                <span class="text-gray-700">Certificate of completion</span>
+                                            </div>
+                                        }
+                                        <div class="flex items-center gap-4">
+                                            <span class="text-primary text-xl flex-shrink-0">♾️</span>
+                                            <span class="text-gray-700">Lifetime access</span>
+                                        </div>
+                                        <div class="flex items-center gap-4">
+                                            <span class="text-primary text-xl flex-shrink-0">💬</span>
+                                            <span class="text-gray-700">Community access</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Course Content -->
+    <section class="py-20 bg-gray-50">
+        <div class="container mx-auto lg:max-w-screen-xl md:max-w-screen-md px-4">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Main Content -->
+                <div class="lg:col-span-2">
+                    <!-- About This Course -->
+                    <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 mb-8">
+                        <h2 class="text-3xl font-bold text-midnight_text mb-6">About This Course</h2>
+                        <p class="text-gray-700 leading-relaxed text-lg">@course.LongDescription</p>
+                    </div>
+
+                    <!-- What You'll Learn -->
+                    <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 mb-8">
+                        <h2 class="text-3xl font-bold text-midnight_text mb-8">What You'll Learn</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            @foreach (var skill in course.WhatYouLearn)
+                            {
+                                <div class="flex items-start gap-4 p-4 rounded-lg bg-success/5 border-l-4 border-success">
+                                    <span class="text-success text-xl mt-1 flex-shrink-0">✓</span>
+                                    <span class="text-gray-700 font-medium">@skill</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Course Modules -->
+                    <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 mb-8">
+                        <div class="flex items-center justify-between mb-8">
+                            <h2 class="text-3xl font-bold text-midnight_text">Course Content</h2>
+                            <div class="text-sm text-gray-500">
+                                @course.Modules.Count modules • @course.Modules.Sum(m => m.Lessons.Count) lessons
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+                            @for (int i = 0; i < course.Modules.Count; i++)
+                            {
+                                var module = course.Modules[i];
+                                <div class="border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+                                    <div class="bg-gray-50 hover:bg-gray-100 px-6 py-5 flex items-center justify-between cursor-pointer transition-colors" @onclick="() => ToggleModule(i)">
+                                        <div class="flex items-center gap-4">
+                                            <span class="bg-primary text-white w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0">@(i + 1)</span>
+                                            <div>
+                                                <h3 class="font-bold text-midnight_text text-lg">@module.Title</h3>
+                                                <p class="text-gray-600 mt-1">@module.Lessons.Count lessons • @module.Duration</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center gap-3">
+                                            <span class="text-sm text-gray-500">@(expandedModules.Contains(i) ? "Collapse" : "Expand")</span>
+                                            <span class="text-primary text-2xl font-bold">@(expandedModules.Contains(i) ? "−" : "+")</span>
+                                        </div>
+                                    </div>
+                                    @if (expandedModules.Contains(i))
+                                    {
+                                        <div class="border-t border-gray-200 bg-white">
+                                            <div class="p-6 space-y-4">
+                                                @foreach (var lesson in module.Lessons)
+                                                {
+                                                    <div class="flex items-center gap-4 py-3 px-4 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                                                        <span class="text-primary text-lg">▶️</span>
+                                                        <span class="text-gray-700 font-medium">@lesson</span>
+                                                        <div class="ml-auto text-sm text-gray-500">5 min</div>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Requirements -->
+                    <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+                        <h2 class="text-3xl font-bold text-midnight_text mb-8">Requirements</h2>
+                        <div class="space-y-4">
+                            @foreach (var requirement in course.Requirements)
+                            {
+                                <div class="flex items-start gap-4 p-4 rounded-lg bg-blue-50 border-l-4 border-primary">
+                                    <span class="text-primary text-xl mt-1 flex-shrink-0">•</span>
+                                    <span class="text-gray-700 font-medium">@requirement</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar -->
+                <div class="lg:col-span-1">
+                    <div class="sticky top-32 space-y-6">
+                        <!-- Course Stats Card -->
+                        <div class="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
+                            <h3 class="text-2xl font-bold text-midnight_text mb-6 border-b border-gray-100 pb-4">Course Details</h3>
+                            <div class="space-y-5">
+                                <div class="flex items-center justify-between py-2">
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-primary text-xl">👥</span>
+                                        <span class="text-gray-600 font-medium">Students</span>
+                                    </div>
+                                    <span class="font-bold text-midnight_text">@course.Students</span>
+                                </div>
+                                <div class="flex items-center justify-between py-2">
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-primary text-xl">🎥</span>
+                                        <span class="text-gray-600 font-medium">Lessons</span>
+                                    </div>
+                                    <span class="font-bold text-midnight_text">@course.Classes</span>
+                                </div>
+                                <div class="flex items-center justify-between py-2">
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-primary text-xl">⏱️</span>
+                                        <span class="text-gray-600 font-medium">Duration</span>
+                                    </div>
+                                    <span class="font-bold text-midnight_text">@course.Duration</span>
+                                </div>
+                                <div class="flex items-center justify-between py-2">
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-primary text-xl">📊</span>
+                                        <span class="text-gray-600 font-medium">Level</span>
+                                    </div>
+                                    <span class="font-bold text-midnight_text">@course.Level</span>
+                                </div>
+                                <div class="flex items-center justify-between py-2">
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-primary text-xl">🌍</span>
+                                        <span class="text-gray-600 font-medium">Language</span>
+                                    </div>
+                                    <span class="font-bold text-midnight_text">@course.Language</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Share Course Card -->
+                        <div class="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
+                            <h3 class="text-xl font-bold text-midnight_text mb-4">Share this course</h3>
+                            <div class="flex gap-3">
+                                <button class="flex-1 bg-blue-600 text-white py-3 px-4 rounded-full font-semibold hover:bg-blue-700 transition-colors text-sm">
+                                    Facebook
+                                </button>
+                                <button class="flex-1 bg-blue-400 text-white py-3 px-4 rounded-full font-semibold hover:bg-blue-500 transition-colors text-sm">
+                                    Twitter
+                                </button>
+                                <button class="flex-1 bg-gray-600 text-white py-3 px-4 rounded-full font-semibold hover:bg-gray-700 transition-colors text-sm">
+                                    Copy Link
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Authentication Modals -->
+    <LoginModal IsVisible="@showLoginModal"
+                OnClose="@(() => showLoginModal = false)"
+                OnSwitchToRegister="@SwitchToRegister"
+                OnLoginSuccess="@HandleAuthSuccess" />
+
+    <RegisterModal IsVisible="@showRegisterModal"
+                   OnClose="@(() => showRegisterModal = false)"
+                   OnSwitchToLogin="@SwitchToLogin"
+                   OnLoginSuccess="@HandleAuthSuccess" />
+}
+
+@code {
+    [Parameter] public int CourseId { get; set; }
+
+    private Course? course;
+    private HashSet<int> expandedModules = new();
+
+    // Authentication modal state
+    private bool showLoginModal = false;
+    private bool showRegisterModal = false;
+
+    // Enrollment state
+    private bool isEnrolling = false;
+    private bool isUnenrolling = false;
+
+    protected override void OnParametersSet()
+    {
+        course = DataService.GetCourseById(CourseId);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Subscribe to authentication state changes
+        AuthService.OnAuthStateChanged += StateHasChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Scroll to top when the page loads
+            await ScrollToTop();
+        }
+    }
+
+    public void Dispose()
+    {
+        // Unsubscribe from authentication state changes
+        AuthService.OnAuthStateChanged -= StateHasChanged;
+    }
+
+    private async Task ScrollToTop()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("eval", "window.scrollTo({ top: 0, behavior: 'smooth' });");
+        }
+        catch
+        {
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("window.scrollTo", 0, 0);
+            }
+            catch
+            {
+                // Ignore if JavaScript fails
+            }
+        }
+    }
+
+    private void ToggleModule(int moduleIndex)
+    {
+        if (expandedModules.Contains(moduleIndex))
+        {
+            expandedModules.Remove(moduleIndex);
+        }
+        else
+        {
+            expandedModules.Add(moduleIndex);
+        }
+    }
+
+    // Authentication modal methods
+    private void SwitchToLogin()
+    {
+        showRegisterModal = false;
+        showLoginModal = true;
+    }
+
+    private void SwitchToRegister()
+    {
+        showLoginModal = false;
+        showRegisterModal = true;
+    }
+
+    private async Task HandleAuthSuccess(bool success)
+    {
+        if (success)
+        {
+            showLoginModal = false;
+            showRegisterModal = false;
+
+            // Auto-enroll after successful authentication
+            await HandleEnrollment();
+        }
+    }
+
+    // Enrollment methods
+    private async Task HandleEnrollClick()
+    {
+        if (AuthService.IsAuthenticated)
+        {
+            await HandleEnrollment();
+        }
+        else
+        {
+            showLoginModal = true;
+        }
+    }
+
+    private async Task HandleEnrollment()
+    {
+        if (course == null) return;
+
+        isEnrolling = true;
+        StateHasChanged();
+
+        try
+        {
+            var success = await EnrollmentService.EnrollInCourseAsync(course.Id);
+            if (success)
+            {
+                // Enrollment successful - force refresh of enrollment data
+                await EnrollmentService.GetMyEnrollmentsAsync();
+                StateHasChanged();
+            }
+        }
+        finally
+        {
+            isEnrolling = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleUnenroll()
+    {
+        if (course == null) return;
+
+        isUnenrolling = true;
+        StateHasChanged();
+
+        try
+        {
+            var success = await EnrollmentService.UnenrollFromCourseAsync(course.Id);
+            if (success)
+            {
+                // Unenrollment successful - force refresh of enrollment data
+                await EnrollmentService.GetMyEnrollmentsAsync();
+                StateHasChanged();
+            }
+        }
+        finally
+        {
+            isUnenrolling = false;
+            StateHasChanged();
+        }
+    }
+
+    private void GoToStudentPortal()
+    {
+        Navigation.NavigateTo("/portal");
+    }
+}

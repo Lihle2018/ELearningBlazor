@@ -1,0 +1,281 @@
+@using ELearningBlazor.Services
+@using ELearningBlazor.Models
+@using ELearningBlazor.Components.Auth
+@using ELearningBlazor.Utils
+@using Microsoft.AspNetCore.Components.Web
+@implements IDisposable
+@inject IJSRuntime JSRuntime
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+
+<header class="@($"fixed top-0 z-40 w-full pb-5 transition-all duration-300 bg-white {(isSticky ? "shadow-lg py-5" : "shadow-none py-6")}")">
+    <div class="lg:py-0 py-2">
+        <div class="container mx-auto lg:max-w-screen-xl md:max-w-screen-md flex items-center justify-between px-4">
+            <Logo />
+            <nav class="hidden lg:flex flex-grow items-center gap-8 justify-center">
+                @foreach (var item in headerItems)
+                {
+                    <a href="@item.Href" class="text-gray-700 hover:text-primary font-medium">@item.Label</a>
+                }
+            </nav>
+            <div class="flex items-center gap-4">
+                @if (AuthService.IsAuthenticated)
+                {
+                    <!-- Authenticated User Menu -->
+                    <div class="hidden lg:flex items-center gap-4">
+                        <a href="/portal" class="bg-primary text-white hover:bg-primary/90 px-6 py-3 rounded-full text-sm font-medium transition-colors">
+                            Portal
+                        </a>
+
+                        <!-- User Dropdown -->
+                        <div class="relative">
+                            <button @onclick="ToggleUserDropdown" class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm border-2 border-primary/20 hover:bg-primary/90 transition-colors">
+                                @GetUserInitials(AuthService.CurrentUser.Name)
+                            </button>
+
+                            @if (showUserDropdown)
+                            {
+                                <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                                    <div class="px-4 py-2 border-b border-gray-100">
+                                        <p class="text-sm font-medium text-midnight_text">@AuthService.CurrentUser.Name</p>
+                                        <p class="text-xs text-gray-500">@AuthService.CurrentUser.Email</p>
+                                    </div>
+                                    <button @onclick="GoToDashboard"
+                                            class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
+                                        📊 Dashboard
+                                    </button>
+                                    <button @onclick="GoToSettings"
+                                            class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
+                                        ⚙️ Settings
+                                    </button>
+                                    <div class="border-t border-gray-100 mt-2 pt-2">
+                                        <button @onclick="HandleDropdownLogout"
+                                                class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
+                                            🚪 Logout
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <!-- Guest User Buttons -->
+                    <button @onclick="OpenSignInModal" class="hidden lg:block bg-primary text-white hover:bg-primary/15 hover:text-primary px-16 py-5 rounded-full text-lg font-medium">
+                        Sign In
+                    </button>
+
+                    <button @onclick="OpenSignUpModal" class="hidden lg:block bg-primary/15 hover:bg-primary text-primary hover:text-white px-16 py-5 rounded-full text-lg font-medium">
+                        Sign Up
+                    </button>
+                }
+
+                <!-- Mobile Menu Button -->
+                <button @onclick="ToggleMobileMenu" class="block lg:hidden p-2 rounded-lg" aria-label="Toggle mobile menu">
+                    <span class="block w-6 h-0.5 bg-gray-600"></span>
+                    <span class="block w-6 h-0.5 bg-gray-600 mt-1.5"></span>
+                    <span class="block w-6 h-0.5 bg-gray-600 mt-1.5"></span>
+                </button>
+
+                <!-- Mobile User Menu -->
+                @if (AuthService.IsAuthenticated)
+                {
+                    <button @onclick="ToggleUserDropdown" class="block lg:hidden w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs border-2 border-primary/20 hover:bg-primary/90 transition-colors ml-2">
+                        @GetUserInitials(AuthService.CurrentUser.Name)
+                    </button>
+                }
+            </div>
+        </div>
+
+        @if (navbarOpen)
+        {
+            <div class="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 z-40" @onclick="CloseMobileMenu" />
+        }
+
+        @if (showUserDropdown && !navbarOpen)
+        {
+            <div class="fixed top-0 left-0 w-full h-full z-30" @onclick="() => showUserDropdown = false" />
+        }
+
+        <div class="@($"lg:hidden fixed top-0 right-0 h-full w-full bg-white shadow-lg transform transition-transform duration-300 max-w-xs {(navbarOpen ? "translate-x-0" : "translate-x-full")} z-50")">
+            <div class="flex items-center justify-between p-4">
+                <h2 class="text-lg font-bold text-midnight_text">
+                    <Logo />
+                </h2>
+                <button @onclick="CloseMobileMenu" class="text-2xl text-gray-600 hover:text-primary" aria-label="Close menu Modal">
+                    ×
+                </button>
+            </div>
+            <nav class="flex flex-col items-start p-4">
+                @foreach (var item in headerItems)
+                {
+                    <a href="@item.Href" class="text-gray-700 hover:text-primary font-medium py-2" @onclick="CloseMobileMenu">@item.Label</a>
+                }
+                <div class="mt-4 flex flex-col space-y-4 w-full">
+                    @if (AuthService.IsAuthenticated)
+                    {
+                        <a href="/portal" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 text-center" @onclick="CloseMobileMenu">
+                            Portal
+                        </a>
+                        <button @onclick="() => { HandleLogout(); CloseMobileMenu(); }" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
+                            Logout
+                        </button>
+                    }
+                    else
+                    {
+                        <button @onclick="() => { OpenSignInModal(); CloseMobileMenu(); }" class="bg-transparent border border-primary text-primary px-4 py-2 rounded-lg hover:bg-blue-600 hover:text-white">
+                            Sign In
+                        </button>
+                        <button @onclick="() => { OpenSignUpModal(); CloseMobileMenu(); }" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                            Sign Up
+                        </button>
+                    }
+                </div>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Authentication Modals -->
+    <LoginModal IsVisible="@showLoginModal"
+                OnClose="@(() => showLoginModal = false)"
+                OnSwitchToRegister="@SwitchToRegister"
+                OnLoginSuccess="@HandleLoginSuccess" />
+
+    <RegisterModal IsVisible="@showRegisterModal"
+                   OnClose="@(() => showRegisterModal = false)"
+                   OnSwitchToLogin="@SwitchToLogin"
+                   OnLoginSuccess="@HandleLoginSuccess" />
+</header>
+
+@code {
+    private List<HeaderItem> headerItems = NavigationService.GetHeaderItems();
+    private bool isSticky = true; // Always sticky for now
+    private bool navbarOpen = false;
+
+    // New authentication modal state
+    private bool showLoginModal = false;
+    private bool showRegisterModal = false;
+    private bool showUserDropdown = false;
+
+    protected override void OnInitialized()
+    {
+        AuthService.OnAuthStateChanged += StateHasChanged;
+    }
+
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // For now, just make header sticky by default to avoid JavaScript issues
+            // The CSS handles the visual styling
+        }
+        return Task.CompletedTask;
+    }
+
+    [JSInvokable]
+    public async Task HandleScroll()
+    {
+        // Simplified - no JavaScript interop for now
+        await Task.CompletedTask;
+    }
+
+    // New authentication methods
+    private void OpenSignInModal()
+    {
+        showLoginModal = true;
+        showRegisterModal = false;
+        navbarOpen = false;
+        showUserDropdown = false;
+    }
+
+    private void OpenSignUpModal()
+    {
+        showRegisterModal = true;
+        showLoginModal = false;
+        navbarOpen = false;
+        showUserDropdown = false;
+    }
+
+    private void SwitchToLogin()
+    {
+        showRegisterModal = false;
+        showLoginModal = true;
+    }
+
+    private void SwitchToRegister()
+    {
+        showLoginModal = false;
+        showRegisterModal = true;
+    }
+
+    private async Task HandleLoginSuccess(bool success)
+    {
+        if (success)
+        {
+            showLoginModal = false;
+            showRegisterModal = false;
+
+            // Navigate to portal after successful login
+            Navigation.NavigateTo("/portal");
+        }
+    }
+
+    private async Task HandleLogout()
+    {
+        await AuthService.LogoutAsync();
+        Navigation.NavigateTo("/");
+    }
+
+    private void ToggleMobileMenu()
+    {
+        navbarOpen = !navbarOpen;
+        showUserDropdown = false;
+    }
+
+    private void CloseMobileMenu()
+    {
+        navbarOpen = false;
+    }
+
+    private void ToggleUserDropdown()
+    {
+        showUserDropdown = !showUserDropdown;
+        navbarOpen = false;
+    }
+
+    private void GoToDashboard()
+    {
+        Navigation.NavigateTo("/portal");
+        showUserDropdown = false;
+    }
+
+    private void GoToSettings()
+    {
+        Navigation.NavigateTo("/portal");
+        showUserDropdown = false;
+    }
+
+    private async Task HandleDropdownLogout()
+    {
+        showUserDropdown = false;
+        await HandleLogout();
+    }
+
+    private string GetUserInitials(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return "U";
+
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1)
+            return parts[0][0].ToString().ToUpper();
+
+        return $"{parts[0][0]}{parts[^1][0]}".ToUpper();
+    }
+
+    public void Dispose()
+    {
+        AuthService.OnAuthStateChanged -= StateHasChanged;
+    }
+}

@@ -1,0 +1,101 @@
+@using ELearningBlazor.Services
+@using ELearningBlazor.Models
+@using ELearningBlazor.Utils
+
+<section id="courses">
+    <div class="container mx-auto lg:max-w-screen-xl md:max-w-screen-md px-4">
+        <div class="sm:flex justify-between items-center mb-20">
+            <h2 class="text-midnight_text text-4xl lg:text-5xl font-semibold mb-5 sm:mb-0">Popular courses.</h2>
+            <a href="/" class="text-primary text-lg font-medium hover:tracking-widest duration-500">Explore courses&nbsp;&gt;&nbsp;</a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            @foreach (var course in courses)
+            {
+                <div class="bg-white mb-12 px-3 pt-3 pb-12 shadow-course-shadow rounded-2xl h-full cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-300" @onclick="() => NavigateToCourse(course.Id)">
+                    <div class="relative rounded-3xl">
+                        <img src="@ImageHelper.GetImagePath(course.ImgSrc)" alt="course-image" width="389" height="262" class="m-auto rounded-3xl" />
+                        <div class="absolute right-5 -bottom-2 bg-secondary rounded-full p-6">
+                            <h3 class="text-white uppercase text-center text-sm font-medium">best <br /> seller</h3>
+                        </div>
+                    </div>
+
+                    <div class="px-3 pt-6">
+                        <h2 class="text-2xl font-bold text-black max-w-75% hover:text-primary transition-colors cursor-pointer">@course.Heading</h2>
+                        <h3 class="text-base font-normal pt-6 text-black/75">@course.Name</h3>
+                        <div class="flex justify-between items-center py-6 border-b">
+                            <div class="flex items-center gap-4">
+                                <h3 class="text-red-700 text-2xl font-medium">@course.Rating</h3>
+                                <div class="flex">
+                                    @RenderStars(course.Rating)
+                                </div>
+                            </div>
+                            <h3 class="text-3xl font-medium">@(course.Price == 0 ? "Free" : $"${course.Price}")</h3>
+                        </div>
+                        <div class="flex justify-between pt-6">
+                            <div class="flex gap-4">
+                                <span class="text-primary text-xl">📚</span>
+                                <h3 class="text-base font-medium text-black opacity-75">@course.Classes classes</h3>
+                            </div>
+                            <div class="flex gap-4">
+                                <span class="text-primary text-xl">👥</span>
+                                <h3 class="text-base font-medium text-black opacity-75">@course.Students students</h3>
+                            </div>
+                        </div>
+
+                        <!-- Add a subtle "View Details" indicator -->
+                        <div class="flex items-center justify-center mt-4 text-primary hover:text-primary/80 transition-colors">
+                            <span class="text-sm font-medium">View Details</span>
+                            <span class="ml-2">→</span>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+@inject NavigationManager Navigation
+@inject ICourseService CourseService
+
+@code {
+    private List<Course> courses = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        courses = await CourseService.GetCoursesAsync();
+    }
+
+    private void NavigateToCourse(int courseId)
+    {
+        Navigation.NavigateTo($"/course/{courseId}");
+    }
+
+    private RenderFragment RenderStars(double rating)
+    {
+        return __builder =>
+        {
+            var fullStars = (int)Math.Floor(rating);
+            var halfStars = rating % 1 >= 0.5 ? 1 : 0;
+            var emptyStars = 5 - fullStars - halfStars;
+
+            // Render full stars
+            for (int i = 0; i < fullStars; i++)
+            {
+                __builder.AddMarkupContent(0, "<span class=\"text-yellow-500 text-xl\">★</span>");
+            }
+
+            // Render half star
+            if (halfStars > 0)
+            {
+                __builder.AddMarkupContent(1, "<span class=\"text-yellow-500 text-xl\">☆</span>");
+            }
+
+            // Render empty stars
+            for (int i = 0; i < emptyStars; i++)
+            {
+                __builder.AddMarkupContent(2, "<span class=\"text-gray-400 text-xl\">☆</span>");
+            }
+        };
+    }
+}

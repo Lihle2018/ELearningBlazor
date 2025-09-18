@@ -1,0 +1,28 @@
+﻿@inherits LayoutComponentBase
+@inject NavigationManager Navigation
+
+<div class="min-h-screen flex flex-col">
+    <Header />
+    <main class="flex-grow pt-20">
+        @Body
+    </main>
+    @if (!IsPortalPage())
+    {
+        <Footer />
+    }
+    <ScrollToTop />
+</div>
+
+@code {
+    private bool IsPortalPage()
+    {
+        var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
+        return uri.AbsolutePath.StartsWith("/portal", StringComparison.OrdinalIgnoreCase);
+    }
+}
+
+<div id="blazor-error-ui" class="fixed bottom-0 right-0 bg-red-600 text-white p-4 rounded-tl-lg z-50">
+    An unhandled error has occurred.
+    <a href="" class="reload underline">Reload</a>
+    <a class="dismiss cursor-pointer ml-4">🗙</a>
+</div>

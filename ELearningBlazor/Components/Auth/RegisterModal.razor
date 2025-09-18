@@ -1,0 +1,171 @@
+@using ELearningBlazor.Services
+@inject AuthService AuthService
+@inject ApiService ApiService
+
+@if (IsVisible)
+{
+    <div class="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center z-[9999]" @onclick="@(() => { if (!IsLoading) CloseModal(); })">
+        <div class="bg-white rounded-2xl p-8 w-full max-w-md mx-4 shadow-2xl transform" @onclick:stopPropagation="true">
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-midnight_text">Create Account</h2>
+                <button @onclick="CloseModal" class="text-gray-400 hover:text-gray-600 text-2xl" disabled="@IsLoading">×</button>
+            </div>
+
+            <!-- Error Message -->
+            @if (!string.IsNullOrEmpty(ErrorMessage))
+            {
+                <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+                    @ErrorMessage
+                </div>
+            }
+
+            <!-- Register Form -->
+            <form @onsubmit="HandleRegister" @onsubmit:preventDefault="true">
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-semibold mb-2">
+                        Full Name
+                    </label>
+                    <input @bind="Name" type="text" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                           placeholder="Enter your full name" disabled="@IsLoading" />
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-semibold mb-2">
+                        Email Address
+                    </label>
+                    <input @bind="Email" type="email" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                           placeholder="Enter your email" disabled="@IsLoading" />
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-semibold mb-2">
+                        Password
+                    </label>
+                    <input @bind="Password" type="password" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                           placeholder="Create a password" disabled="@IsLoading" />
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-gray-700 text-sm font-semibold mb-2">
+                        Confirm Password
+                    </label>
+                    <input @bind="ConfirmPassword" type="password" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                           placeholder="Confirm your password" disabled="@IsLoading" />
+                </div>
+
+                <button type="submit" class="w-full bg-primary text-white py-3 px-6 rounded-lg font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50"
+                        disabled="@IsLoading">
+                    @if (IsLoading)
+                    {
+                        <span class="flex items-center justify-center gap-2">
+                            <span class="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span>
+                            Creating account...
+                        </span>
+                    }
+                    else
+                    {
+                        <span>Create Account</span>
+                    }
+                </button>
+            </form>
+
+            <!-- Switch to Login -->
+            <div class="mt-6 text-center">
+                <p class="text-gray-600">
+                    Already have an account?
+                    <button @onclick="SwitchToLogin" class="text-primary hover:text-primary/80 font-semibold" disabled="@IsLoading">
+                        Sign in here
+                    </button>
+                </p>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; } = false;
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnSwitchToLogin { get; set; }
+    [Parameter] public EventCallback<bool> OnLoginSuccess { get; set; }
+
+    private string Name = "";
+    private string Email = "";
+    private string Password = "";
+    private string ConfirmPassword = "";
+    private string ErrorMessage = "";
+    private bool IsLoading = false;
+
+    private async Task HandleRegister()
+    {
+        if (IsLoading) return;
+
+        ErrorMessage = "";
+
+        // Validation
+        if (string.IsNullOrWhiteSpace(Name) || string.IsNullOrWhiteSpace(Email) ||
+            string.IsNullOrWhiteSpace(Password) || string.IsNullOrWhiteSpace(ConfirmPassword))
+        {
+            ErrorMessage = "All fields are required.";
+            return;
+        }
+
+        if (Password != ConfirmPassword)
+        {
+            ErrorMessage = "Passwords do not match.";
+            return;
+        }
+
+        if (Password.Length < 6)
+        {
+            ErrorMessage = "Password must be at least 6 characters long.";
+            return;
+        }
+
+        IsLoading = true;
+
+        try
+        {
+            var success = await AuthService.RegisterWithApiAsync(ApiService, Email, Name, Password);
+            if (success)
+            {
+                await OnLoginSuccess.InvokeAsync(true);
+                CloseModal();
+            }
+            else
+            {
+                ErrorMessage = "An account with this email already exists.";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = "An error occurred during registration. Please try again.";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task CloseModal()
+    {
+        if (IsLoading) return;
+
+        Name = "";
+        Email = "";
+        Password = "";
+        ConfirmPassword = "";
+        ErrorMessage = "";
+        await OnClose.InvokeAsync();
+    }
+
+    private async Task SwitchToLogin()
+    {
+        if (IsLoading) return;
+        await OnSwitchToLogin.InvokeAsync();
+    }
+}

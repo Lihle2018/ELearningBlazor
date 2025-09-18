@@ -1,0 +1,38 @@
+@using ELearningBlazor.Services
+@using ELearningBlazor.Models
+
+<footer class="bg-deepSlate py-10">
+    <div class="container mx-auto lg:max-w-screen-xl md:max-w-screen-md px-4">
+        <div class="grid grid-cols-1 gap-y-10 gap-x-16 sm:grid-cols-2 lg:grid-cols-6 xl:gap-x-8">
+            <div class="col-span-4 md:col-span-12 lg:col-span-4">
+                <Logo />
+            </div>
+            <div class="col-span-2">
+                <h3 class="mb-4 text-2xl font-medium">Links</h3>
+                <ul>
+                    @foreach (var item in headerItems)
+                    {
+                        <li class="mb-2 text-black/50 hover:text-primary w-fit">
+                            <a href="@item.Href">@item.Label</a>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+
+        <div class="mt-10 lg:flex items-center justify-between">
+            <h4 class="text-black/50 text-sm text-center lg:text-start font-normal">
+                ©2025 Agency. All Rights Reserved by
+                <a href="e-learning.com" target="_blank" class="hover:text-primary">e-learning.com</a>
+            </h4>
+            <div class="flex gap-5 mt-5 lg:mt-0 justify-center lg:justify-start">
+                <a href="/" class="text-black/50 text-sm font-normal hover:text-primary">Privacy policy</a>
+                <a href="/" class="text-black/50 text-sm font-normal hover:text-primary">Terms & conditions</a>
+            </div>
+        </div>
+    </div>
+</footer>
+
+@code {
+    private List<HeaderItem> headerItems = NavigationService.GetHeaderItems();
+}
