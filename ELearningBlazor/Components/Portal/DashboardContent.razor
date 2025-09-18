@@ -86,7 +86,7 @@
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white">Continue Learning</h3>
                     <p class="text-xs text-gray-500 dark:text-gray-400">Pick up where you left off</p>
                 </div>
-                <button class="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800">
+                <button @onclick="GoToMyCourses" class="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800">
                     View All
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
@@ -142,7 +142,7 @@
                         </div>
                         <h3 class="mt-4 text-lg font-semibold text-gray-900 dark:text-white">No courses in progress</h3>
                         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Start learning by enrolling in a course!</p>
-                        <button class="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+                        <button @onclick="GoToBrowseCourses" class="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
                             Browse Courses
                         </button>
                     </div>
@@ -156,7 +156,7 @@
     private List<Course> enrolledCourses = new();
     private List<EnrolledCourse> recentCourses = new();
     private double averageProgress = 0;
-    private int studyStreak = 7;
+    private int studyStreak = 0;
     private int completedCourses = 0;
 
     protected override async Task OnInitializedAsync()
@@ -190,4 +190,17 @@
     {
         Navigation.NavigateTo($"/portal/course/{courseId}");
     }
+
+    private void GoToMyCourses()
+    {
+        OnSwitchToMyCourses.InvokeAsync();
+    }
+
+    private void GoToBrowseCourses()
+    {
+        OnSwitchToBrowseCourses.InvokeAsync();
+    }
+
+    [Parameter] public EventCallback OnSwitchToMyCourses { get; set; }
+    [Parameter] public EventCallback OnSwitchToBrowseCourses { get; set; }
 }

@@ -3,6 +3,7 @@
 @using ELearningBlazor.Models
 @using ELearningBlazor.Utils
 @using ELearningBlazor.Components.Auth
+@using ELearningBlazor.Components.Shared
 @inject IJSRuntime JSRuntime
 @inject IAuthService AuthService
 @inject IEnrollmentService EnrollmentService
@@ -123,7 +124,7 @@ else
                                             <button @onclick="GoToStudentPortal" class="flex-1 bg-primary text-white py-3 px-4 rounded-lg font-semibold hover:bg-primary/90 transition-colors">
                                                 Continue Learning
                                             </button>
-                                            <button @onclick="HandleUnenroll" class="flex-1 bg-red-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-red-700 transition-colors" disabled="@isUnenrolling">
+                                            <button @onclick="ShowUnenrollConfirmation" class="flex-1 bg-red-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-red-700 transition-colors" disabled="@isUnenrolling">
                                                 @if (isUnenrolling)
                                                 {
                                                     <span>Removing...</span>
@@ -376,6 +377,7 @@ else
     // Enrollment state
     private bool isEnrolling = false;
     private bool isUnenrolling = false;
+    private bool showUnenrollModal = false;
 
     protected override void OnParametersSet()
     {
@@ -496,7 +498,12 @@ else
         }
     }
 
-    private async Task HandleUnenroll()
+    private void ShowUnenrollConfirmation()
+    {
+        showUnenrollModal = true;
+    }
+
+    private async Task ConfirmUnenroll()
     {
         if (course == null) return;
 
@@ -510,6 +517,7 @@ else
             {
                 // Unenrollment successful - force refresh of enrollment data
                 await EnrollmentService.GetMyEnrollmentsAsync();
+                showUnenrollModal = false;
                 StateHasChanged();
             }
         }
@@ -520,8 +528,23 @@ else
         }
     }
 
+    private void CancelUnenroll()
+    {
+        showUnenrollModal = false;
+    }
+
     private void GoToStudentPortal()
     {
         Navigation.NavigateTo("/portal");
     }
 }
+
+<!-- Unenroll Confirmation Modal -->
+<ConfirmationModal IsVisible="@showUnenrollModal"
+                   Title="Confirm Course Removal"
+                   Message="@($"Are you sure you want to remove '{course?.Heading}'? This action cannot be undone and you will lose all progress.")"
+                   ConfirmText="Remove Course"
+                   ProcessingText="Removing..."
+                   IsProcessing="@isUnenrolling"
+                   OnConfirm="@ConfirmUnenroll"
+                   OnCancel="@CancelUnenroll" />

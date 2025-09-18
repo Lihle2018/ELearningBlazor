@@ -10,14 +10,6 @@
                 </div>
                 <h1 class="text-midnight_text text-4xl sm:text-5xl font-semibold pt-5 lg:pt-0">Advance your engineering skills with us.</h1>
                 <h3 class="text-black/70 text-lg pt-5 lg:pt-0">Build skills with our courses and mentor from world-class companies.</h3>
-                <div class="relative rounded-full pt-5 lg:pt-0">
-                    <input @bind="searchQuery" @onkeypress="HandleKeyPress"
-                           type="text" class="py-6 lg:py-8 pl-8 pr-20 text-lg w-full text-black rounded-full focus:outline-none shadow-input-shadow"
-                           placeholder="search courses..." />
-                    <button @onclick="HandleSearch" class="bg-secondary p-5 rounded-full absolute right-2 top-2">
-                        <span class="text-white text-4xl">🔍</span>
-                    </button>
-                </div>
                 <div class="flex items-center justify-between pt-10 lg:pt-4">
                     <div class="flex gap-2">
                         <img src="@ImageHelper.GetImagePath("images/banner/check-circle.svg")" alt="check-image" width="30" height="30" />
@@ -40,23 +32,3 @@
     </div>
 </section>
 
-@code {
-    private string searchQuery = string.Empty;
-
-    private void HandleSearch()
-    {
-        if (!string.IsNullOrWhiteSpace(searchQuery))
-        {
-            // Implement search functionality
-            Console.WriteLine($"Searching for: {searchQuery}");
-        }
-    }
-
-    private void HandleKeyPress(KeyboardEventArgs e)
-    {
-        if (e.Key == "Enter")
-        {
-            HandleSearch();
-        }
-    }
-}
