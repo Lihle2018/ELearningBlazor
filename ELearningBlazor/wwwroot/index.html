@@ -26,6 +26,20 @@
         <a href="." class="reload">Reload</a>
         <span class="dismiss">🗙</span>
     </div>-->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Handle Blazor error UI dismiss button
+            const errorUI = document.getElementById('blazor-error-ui');
+            if (errorUI) {
+                const dismissButton = errorUI.querySelector('.dismiss');
+                if (dismissButton) {
+                    dismissButton.addEventListener('click', function () {
+                        errorUI.style.display = 'none';
+                    });
+                }
+            }
+        });
+    </script>
     <script src="_framework/blazor.webassembly.js"></script>
 </body>
 
